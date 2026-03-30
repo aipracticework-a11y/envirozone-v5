@@ -7,7 +7,7 @@ export default defineConfig({
     port: 3001,
     proxy: {
       '/api': {
-        target: 'http://localhost:8001',
+        target: 'https://envirozone-v5-api.onrender.com',
         changeOrigin: true,
       }
     }
