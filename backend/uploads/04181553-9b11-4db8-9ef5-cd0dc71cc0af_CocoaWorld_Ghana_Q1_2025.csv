@@ -1,0 +1,7 @@
+supplier_name,emission_value,unit,scope,reporting_period,data_source,country,commodity,activity_type,quantity,latitude,longitude,certification,geolocation,deforestation_free,legal_compliance
+CocoaWorld Ghana,210.5,tCO2e,Scope 3,Q1 2025,Farm Records,Ghana,Cocoa,road freight,1960,6.5,-1.5,Rainforest Alliance,polygon available,Yes,Yes
+CocoaWorld Ghana,198.3,tCO2e,Scope 3,Q1 2025,Farm Records,Ghana,Cocoa,road freight,1850,6.5,-1.5,Rainforest Alliance,polygon available,Yes,Yes
+CocoaWorld Ghana,215.7,tCO2e,Scope 3,Q1 2025,Farm Records,Ghana,Cocoa,road freight,2010,6.5,-1.5,Rainforest Alliance,polygon available,Yes,Yes
+CocoaWorld Ghana,205.1,tCO2e,Scope 3,Q1 2025,Farm Records,Ghana,Cocoa,road freight,1910,6.5,-1.5,Rainforest Alliance,polygon available,Yes,Yes
+CocoaWorld Ghana,212.8,tCO2e,Scope 3,Q1 2025,Farm Records,Ghana,Cocoa,road freight,1980,6.5,-1.5,Rainforest Alliance,polygon available,Yes,Yes
+CocoaWorld Ghana,201.4,tCO2e,Scope 3,Q1 2025,Farm Records,Ghana,Cocoa,road freight,1880,6.5,-1.5,Rainforest Alliance,polygon available,Yes,Yes

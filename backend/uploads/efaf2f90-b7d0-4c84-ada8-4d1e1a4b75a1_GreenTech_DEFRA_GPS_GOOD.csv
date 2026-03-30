@@ -1,0 +1,11 @@
+supplier_name,emission_value,unit,scope,reporting_period,data_source,country,commodity,activity_type,quantity,latitude,longitude,verification_status,auditor,submission_date
+GreenTech Manufacturing,9.19,tCO2e,Scope 1,Q1 2025,SAP ERP,Germany,Barley,natural gas,50000,51.1657,10.4515,Verified,Ernst & Young,2025-03-15
+GreenTech Manufacturing,8.95,tCO2e,Scope 1,Q1 2025,SAP ERP,Germany,Barley,natural gas,48500,51.1657,10.4515,Verified,Ernst & Young,2025-03-15
+GreenTech Manufacturing,9.42,tCO2e,Scope 1,Q1 2025,SAP ERP,Germany,Barley,natural gas,51200,51.1657,10.4515,Verified,Ernst & Young,2025-03-15
+GreenTech Manufacturing,8.78,tCO2e,Scope 1,Q1 2025,SAP ERP,Germany,Barley,natural gas,47800,51.1657,10.4515,Verified,Ernst & Young,2025-03-15
+GreenTech Manufacturing,9.31,tCO2e,Scope 1,Q1 2025,SAP ERP,Germany,Barley,natural gas,50900,51.1657,10.4515,Verified,Ernst & Young,2025-03-15
+GreenTech Manufacturing,9.08,tCO2e,Scope 3,Q1 2025,SAP ERP,Germany,Barley,road freight,1200,51.1657,10.4515,Verified,Ernst & Young,2025-03-15
+GreenTech Manufacturing,8.87,tCO2e,Scope 3,Q1 2025,SAP ERP,Germany,Barley,road freight,1350,51.1657,10.4515,Verified,Ernst & Young,2025-03-15
+GreenTech Manufacturing,9.55,tCO2e,Scope 3,Q1 2025,SAP ERP,Germany,Barley,road freight,1100,51.1657,10.4515,Verified,Ernst & Young,2025-03-15
+GreenTech Manufacturing,9.02,tCO2e,Scope 3,Q1 2025,SAP ERP,Germany,Barley,road freight,1420,51.1657,10.4515,Verified,Ernst & Young,2025-03-15
+GreenTech Manufacturing,9.24,tCO2e,Scope 3,Q1 2025,SAP ERP,Germany,Barley,road freight,1280,51.1657,10.4515,Verified,Ernst & Young,2025-03-15

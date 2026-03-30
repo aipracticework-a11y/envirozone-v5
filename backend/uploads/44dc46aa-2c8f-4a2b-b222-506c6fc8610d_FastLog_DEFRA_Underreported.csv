@@ -1,0 +1,9 @@
+supplier_name,emission_value,unit,scope,reporting_period,data_source,country,commodity,activity_type,quantity
+FastLog Logistics,2.1,tCO2e,Scope 3,Q1 2025,Manual Entry,India,Cotton,diesel,5000
+FastLog Logistics,1.8,tCO2e,Scope 3,Q1 2025,Manual Entry,India,Cotton,diesel,4800
+FastLog Logistics,2.3,tCO2e,Scope 3,Q1 2025,Manual Entry,India,Cotton,diesel,5200
+FastLog Logistics,1.9,tCO2e,Scope 3,Q1 2025,Manual Entry,India,Cotton,diesel,4900
+FastLog Logistics,2.0,tCO2e,Scope 3,Q1 2025,Manual Entry,India,Cotton,diesel,5100
+FastLog Logistics,1.7,tCO2e,Scope 3,Q1 2025,Manual Entry,India,Cotton,diesel,4700
+FastLog Logistics,2.2,tCO2e,Scope 3,Q1 2025,Manual Entry,India,Cotton,diesel,5300
+FastLog Logistics,1.85,tCO2e,Scope 3,Q1 2025,Manual Entry,India,Cotton,diesel,4850
