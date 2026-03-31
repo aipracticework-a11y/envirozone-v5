@@ -11,7 +11,7 @@ def get_gemini_response(prompt: str, context: str = "") -> str:
     try:
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(full_prompt)
         return response.text
     except Exception as e:

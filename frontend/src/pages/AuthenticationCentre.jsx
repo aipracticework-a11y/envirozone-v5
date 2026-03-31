@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { ShieldCheck, Upload, Loader, CheckCircle, XCircle, AlertTriangle, BookOpen, ExternalLink } from 'lucide-react'
 import axios from 'axios'
 
-const API = axios.create({ baseURL: 'http://localhost:8001', timeout: 120000 })
+const API = axios.create({ baseURL: 'https://envirozone-v5-api.onrender.com', timeout: 120000 })
 
 const COMMODITIES = ['Palm Oil','Timber','Cocoa','Coffee','Soya','Cotton','Almonds','Barley','Energy']
 const CERTIFICATIONS = ['None','RSPO Full','RSPO Partial','FSC 100%','FSC Mix','ISO 14001','Rainforest Alliance','SA8000']
