@@ -25,7 +25,7 @@ def analyze_uploaded_file(filename: str, columns: list, row_count: int,
     try:
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         prompt = f"""You are an ESG data quality expert. Analyze this supplier data file:
 

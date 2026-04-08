@@ -22,20 +22,20 @@ import ProcessingHistory    from './pages/ProcessingHistory'
 
 const NAV = [
   { to:'/',              icon:LayoutDashboard, label:'Dashboard',             section:'platform' },
-  { to:'/suppliers',     icon:Truck,           label:'1. Supplier Portal',    section:'workflow' },
-  { to:'/documents',     icon:FolderOpen,      label:'2. Upload & Verify',    section:'workflow' },
-  { to:'/authenticate',  icon:Lock,            label:'3. Authentication',     section:'workflow' },
-  { to:'/history',       icon:History,         label:'4. Processing History', section:'workflow' },
-  { to:'/lineage',       icon:GitBranch,       label:'5. Data Lineage',       section:'workflow' },
-  { to:'/quality',       icon:ShieldCheck,     label:'6. Data Quality',       section:'workflow' },
-  { to:'/explainability',icon:Brain,           label:'7. AI Explainability',  section:'workflow' },
-  { to:'/audit',         icon:ClipboardList,   label:'8. Audit Trail',        section:'workflow' },
-  { to:'/georisk',       icon:Globe,           label:'9. Geo Risk Map',       section:'intelligence' },
-  { to:'/eudr',          icon:CheckSquare,     label:'10. EUDR Compliance',   section:'intelligence' },
-  { to:'/carbon',        icon:Calculator,      label:'11. Carbon Calculator', section:'intelligence' },
-  { to:'/benchmark',     icon:BarChart3,       label:'12. Benchmark',         section:'intelligence' },
-  { to:'/news',          icon:Newspaper,       label:'13. ESG News',          section:'intelligence' },
-  { to:'/reporting',     icon:FileBarChart2,   label:'14. Reporting Hub',     section:'reporting'    },
+  { to:'/suppliers',     icon:Truck,           label:'Supplier Portal',    section:'workflow' },
+  { to:'/documents',     icon:FolderOpen,      label:'Upload & Verify',    section:'workflow' },
+  { to:'/authenticate',  icon:Lock,            label:'Authentication',     section:'workflow' },
+  { to:'/history',       icon:History,         label:'Processing History', section:'workflow' },
+  { to:'/lineage',       icon:GitBranch,       label:'Data Lineage',       section:'workflow' },
+  { to:'/quality',       icon:ShieldCheck,     label:'Data Quality',       section:'workflow' },
+  { to:'/explainability',icon:Brain,           label:'AI Explainability',  section:'workflow' },
+  { to:'/audit',         icon:ClipboardList,   label:'Audit Trail',        section:'workflow' },
+  { to:'/georisk',       icon:Globe,           label:'Geo Risk Map',       section:'intelligence' },
+  { to:'/eudr',          icon:CheckSquare,     label:'EUDR Compliance',   section:'intelligence' },
+  { to:'/carbon',        icon:Calculator,      label:'Carbon Calculator', section:'intelligence' },
+  { to:'/benchmark',     icon:BarChart3,       label:'Benchmark',         section:'intelligence' },
+  { to:'/news',          icon:Newspaper,       label:'ESG News',          section:'intelligence' },
+  { to:'/reporting',     icon:FileBarChart2,   label:'Reporting Hub',     section:'reporting'    },
 ]
 
 const SECTION_LABELS = {
@@ -52,12 +52,21 @@ function TCSLogo() {
         </svg>
       </div>
       <div>
-        <div className="leading-tight">
-          <span className="text-white font-black text-sm tracking-tight">TCS Envirozone</span>
-          <sup className="text-green-400 font-black text-xs">AI</sup>
-          <span className="text-white font-black text-sm"> 4.0</span>
-        </div>
-        <div className="text-slate-400 text-xs">Data Intelligence</div>
+        <div>
+  {/* <div className="leading-tight">
+    <span className="text-white font-black text-sm tracking-tight">TCS Envirozone</span>
+    <sup className="text-green-400 font-black text-xs">AI</sup>
+    <span className="text-white font-black text-sm"> 4.0</span>
+  </div>
+  <div className="text-slate-400 text-xs">Data Intelligence</div> */}
+
+  {/* NEW LOGO */}
+  <div className="leading-tight">
+    <span className="text-green-400 font-black text-sm tracking-tight">ESG</span>
+    <span className="text-white font-black text-sm"> Data Intelligence</span>
+  </div>
+  <div className="text-slate-400 text-xs">Powered by TCS</div>
+</div>
       </div>
     </div>
   )
