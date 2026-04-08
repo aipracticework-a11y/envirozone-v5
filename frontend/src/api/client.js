@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: 'https://envirozone-v3-api.onrender.com', timeout: 60000 })
+const api = axios.create({ baseURL: 'https://envirozone-v5.onrender.com', timeout: 60000 })
 
 export const getDashboard      = () => api.get('/api/dashboard/summary')
 export const getLineageGraph   = () => api.get('/api/lineage/graph')
