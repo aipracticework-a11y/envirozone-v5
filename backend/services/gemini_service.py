@@ -1,11 +1,29 @@
 import os
 from dotenv import load_dotenv
+from services.guardrails import blocked_prompt_response, enforce_prompt_guardrails
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
+
+def _check_guardrails(prompt: str, context: str = ""):
+    full_message = f"{context}\n\n{prompt}" if context else prompt
+    return enforce_prompt_guardrails(
+        {
+            "user_id": "system",
+            "session_id": "envirozone-ai",
+            "message": full_message,
+        },
+        require_identity=False,
+    )
+
+
 def get_gemini_response(prompt: str, context: str = "") -> str:
     full_prompt = f"{context}\n\n{prompt}" if context else prompt
+    guardrail_result = _check_guardrails(prompt, context)
+    if not guardrail_result.allowed:
+        return blocked_prompt_response(guardrail_result)
+
     if not GEMINI_API_KEY or GEMINI_API_KEY == "your_gemini_api_key_here":
         return _smart_mock(prompt)
     try:
@@ -20,14 +38,7 @@ def get_gemini_response(prompt: str, context: str = "") -> str:
 def analyze_uploaded_file(filename: str, columns: list, row_count: int,
                            missing_fields: list, sample_data: list,
                            data_types: dict, anomalies: list) -> dict:
-    if not GEMINI_API_KEY or GEMINI_API_KEY == "your_gemini_api_key_here":
-        return _mock_file_analysis(filename, columns, missing_fields, anomalies)
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.5-flash")
-
-        prompt = f"""You are an ESG data quality expert. Analyze this supplier data file:
+    prompt = f"""You are an ESG data quality expert. Analyze this supplier data file:
 
 File: {filename}
 Total Rows: {row_count}
@@ -49,6 +60,27 @@ Provide a JSON response with exactly these keys:
   "completeness_pct": <number 0-100>
 }}
 Return ONLY the JSON, no extra text."""
+
+    guardrail_result = _check_guardrails(prompt)
+    if not guardrail_result.allowed:
+        blocked = blocked_prompt_response(guardrail_result)
+        return {
+            "trust_score": 0,
+            "verdict": "Blocked",
+            "summary": blocked,
+            "strengths": [],
+            "issues": [guardrail_result.reason or "guardrail_blocked"],
+            "recommendations": ["Remove prompt-injection text, credentials, or policy-violating content and retry."],
+            "esg_relevance": "Not assessed",
+            "completeness_pct": 0,
+        }
+
+    if not GEMINI_API_KEY or GEMINI_API_KEY == "your_gemini_api_key_here":
+        return _mock_file_analysis(filename, columns, missing_fields, anomalies)
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         response = model.generate_content(prompt)
         import json
