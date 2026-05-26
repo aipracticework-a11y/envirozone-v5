@@ -1,6 +1,7 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: 'https://envirozone-v5.onrender.com', timeout: 60000 })
+const apiBaseURL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : 'https://envirozone-v5.onrender.com')
+const api = axios.create({ baseURL: apiBaseURL, timeout: 60000 })
 
 export const getDashboard      = () => api.get('/api/dashboard/summary')
 export const getLineageGraph   = () => api.get('/api/lineage/graph')
@@ -34,5 +35,6 @@ export const getAuthStandards  = () => api.get('/api/auth/standards')
 export const authenticateFile  = (fd) => api.post('/api/auth/authenticate', fd, { headers:{'Content-Type':'multipart/form-data'}, timeout:120000 })
 export const getCommodityBench = (c) => api.get(`/api/auth/benchmark/${c}`)
 export const getEUDRChecklist  = (c) => api.get(`/api/auth/eudr-checklist/${c}`)
+export const askEnviroAgent    = (body) => api.post('/api/agent/ask', body)
 
 export default api

@@ -9,6 +9,11 @@ export default defineConfig({
       '/api': {
         target: 'https://envirozone-v5-api.onrender.com',
         changeOrigin: true,
+      },
+      '/api-proxy': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api-proxy/, ''),
       }
     }
   }

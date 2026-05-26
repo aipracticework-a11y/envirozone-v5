@@ -13,8 +13,24 @@ from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "envirozone.db")
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+USE_POSTGRES = DATABASE_URL.startswith(("postgres://", "postgresql://"))
+
+def _sql(sql: str) -> str:
+    return sql.replace("?", "%s") if USE_POSTGRES else sql
+
+def _first_value(row):
+    if row is None:
+        return None
+    if isinstance(row, dict):
+        return next(iter(row.values()))
+    return row[0]
 
 def get_db():
+    if USE_POSTGRES:
+        import psycopg
+        from psycopg.rows import dict_row
+        return psycopg.connect(DATABASE_URL, row_factory=dict_row)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -86,7 +102,7 @@ def init_db():
     conn.commit()
 
     # Seed initial suppliers if empty
-    count = c.execute("SELECT COUNT(*) FROM suppliers").fetchone()[0]
+    count = _first_value(c.execute("SELECT COUNT(*) FROM suppliers").fetchone())
     if count == 0:
         _seed_suppliers(c)
         conn.commit()
@@ -186,12 +202,20 @@ def _seed_suppliers(c):
     ]
     now = datetime.utcnow().isoformat()
     for s in suppliers:
-        c.execute("""INSERT OR IGNORE INTO suppliers VALUES (
-            :id,:name,:contact,:country,:region,:commodity,:secondary_commodities,
-            :scope,:certification,:certification_number,:certification_expiry,
-            :status,:trust_score,:files_submitted,:last_submission,:eudr_status,
-            :added_by,:created_at,:updated_at,:notes
-        )""", s)
+        if USE_POSTGRES:
+            c.execute("""INSERT INTO suppliers VALUES (
+                %(id)s,%(name)s,%(contact)s,%(country)s,%(region)s,%(commodity)s,%(secondary_commodities)s,
+                %(scope)s,%(certification)s,%(certification_number)s,%(certification_expiry)s,
+                %(status)s,%(trust_score)s,%(files_submitted)s,%(last_submission)s,%(eudr_status)s,
+                %(added_by)s,%(created_at)s,%(updated_at)s,%(notes)s
+            ) ON CONFLICT (id) DO NOTHING""", s)
+        else:
+            c.execute("""INSERT OR IGNORE INTO suppliers VALUES (
+                :id,:name,:contact,:country,:region,:commodity,:secondary_commodities,
+                :scope,:certification,:certification_number,:certification_expiry,
+                :status,:trust_score,:files_submitted,:last_submission,:eudr_status,
+                :added_by,:created_at,:updated_at,:notes
+            )""", s)
 
 # ── SUPPLIER CRUD ─────────────────────────────────────────────────────────────
 
@@ -203,7 +227,7 @@ def get_all_suppliers():
 
 def get_supplier(supplier_id: str):
     conn = get_db()
-    row = conn.execute("SELECT * FROM suppliers WHERE id=?", (supplier_id,)).fetchone()
+    row = conn.execute(_sql("SELECT * FROM suppliers WHERE id=?"), (supplier_id,)).fetchone()
     conn.close()
     return dict(row) if row else None
 
@@ -211,9 +235,9 @@ def add_supplier(data: dict) -> dict:
     conn = get_db()
     new_id = str(uuid.uuid4())
     now = datetime.utcnow().isoformat()
-    conn.execute("""INSERT INTO suppliers VALUES (
+    conn.execute(_sql("""INSERT INTO suppliers VALUES (
         ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
-    )""", (
+    )"""), (
         new_id, data.get("name",""), data.get("contact",""),
         data.get("country",""), data.get("region",""),
         data.get("commodity",""), data.get("secondary_commodities",""),
@@ -230,7 +254,7 @@ def update_supplier_status(supplier_id: str, status: str, note: str = ""):
     conn = get_db()
     now = datetime.utcnow().isoformat()
     conn.execute(
-        "UPDATE suppliers SET status=?, updated_at=?, notes=COALESCE(NULLIF(?,''), notes) WHERE id=?",
+        _sql("UPDATE suppliers SET status=?, updated_at=?, notes=COALESCE(NULLIF(?,''), notes) WHERE id=?"),
         (status, now, note, supplier_id)
     )
     conn.commit()
@@ -239,23 +263,23 @@ def update_supplier_status(supplier_id: str, status: str, note: str = ""):
 def update_supplier_trust(supplier_id: str, trust_score: int, eudr_status: str = ""):
     conn = get_db()
     now = datetime.utcnow().isoformat()
-    conn.execute("""
+    conn.execute(_sql("""
         UPDATE suppliers
         SET trust_score=?, updated_at=?, files_submitted=files_submitted+1,
             last_submission=?,
             eudr_status=COALESCE(NULLIF(?,''), eudr_status)
         WHERE id=?
-    """, (trust_score, now, now[:10], eudr_status, supplier_id))
+    """), (trust_score, now, now[:10], eudr_status, supplier_id))
     conn.commit()
     conn.close()
 
 def get_supplier_summary():
     conn = get_db()
-    total    = conn.execute("SELECT COUNT(*) FROM suppliers").fetchone()[0]
-    approved = conn.execute("SELECT COUNT(*) FROM suppliers WHERE status='approved'").fetchone()[0]
-    pending  = conn.execute("SELECT COUNT(*) FROM suppliers WHERE status IN ('pending','needs_review')").fetchone()[0]
-    rejected = conn.execute("SELECT COUNT(*) FROM suppliers WHERE status='rejected'").fetchone()[0]
-    avg_trust= conn.execute("SELECT AVG(trust_score) FROM suppliers WHERE trust_score>0").fetchone()[0]
+    total    = _first_value(conn.execute("SELECT COUNT(*) FROM suppliers").fetchone())
+    approved = _first_value(conn.execute("SELECT COUNT(*) FROM suppliers WHERE status='approved'").fetchone())
+    pending  = _first_value(conn.execute("SELECT COUNT(*) FROM suppliers WHERE status IN ('pending','needs_review')").fetchone())
+    rejected = _first_value(conn.execute("SELECT COUNT(*) FROM suppliers WHERE status='rejected'").fetchone())
+    avg_trust= _first_value(conn.execute("SELECT AVG(trust_score) FROM suppliers WHERE trust_score>0").fetchone())
     conn.close()
     return {
         "total": total, "approved": approved,
@@ -269,9 +293,9 @@ def save_upload_record(data: dict) -> str:
     conn = get_db()
     record_id = str(uuid.uuid4())
     now = datetime.utcnow().isoformat()
-    conn.execute("""INSERT INTO file_uploads VALUES (
+    conn.execute(_sql("""INSERT INTO file_uploads VALUES (
         ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
-    )""", (
+    )"""), (
         record_id,
         data.get("supplier_id", ""),
         data.get("supplier_name", ""),
@@ -307,7 +331,7 @@ def get_all_uploads(supplier_id: str = None):
     conn = get_db()
     if supplier_id:
         rows = conn.execute(
-            "SELECT * FROM file_uploads WHERE supplier_id=? ORDER BY uploaded_at DESC",
+            _sql("SELECT * FROM file_uploads WHERE supplier_id=? ORDER BY uploaded_at DESC"),
             (supplier_id,)
         ).fetchall()
     else:
@@ -329,7 +353,7 @@ def get_all_uploads(supplier_id: str = None):
 
 def get_upload_by_id(upload_id: str):
     conn = get_db()
-    row = conn.execute("SELECT * FROM file_uploads WHERE id=?", (upload_id,)).fetchone()
+    row = conn.execute(_sql("SELECT * FROM file_uploads WHERE id=?"), (upload_id,)).fetchone()
     conn.close()
     if not row:
         return None

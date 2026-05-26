@@ -1,8 +1,6 @@
 import { useState, useRef } from 'react'
 import { ShieldCheck, Upload, Loader, CheckCircle, XCircle, AlertTriangle, BookOpen, ExternalLink } from 'lucide-react'
-import axios from 'axios'
-
-const API = axios.create({ baseURL: 'https://envirozone-v5.onrender.com', timeout: 120000 })
+import api from '../api/client'
 
 const COMMODITIES = ['Palm Oil','Timber','Cocoa','Coffee','Soya','Cotton','Almonds','Barley','Energy']
 const CERTIFICATIONS = ['None','RSPO Full','RSPO Partial','FSC 100%','FSC Mix','ISO 14001','Rainforest Alliance','SA8000']
@@ -42,6 +40,12 @@ const StatusBg = (status) => {
   return 'bg-amber-50 border-amber-200'
 }
 
+const evidenceLabel = (status) => {
+  if (['passed','valid','compliant','not_applicable'].includes(status)) return 'Passed'
+  if (['failed','non_compliant','no_certification'].includes(status)) return 'Failed'
+  return 'Needs review'
+}
+
 export default function AuthenticationCentre() {
   const [form, setForm] = useState({ commodity:'Palm Oil', certification:'RSPO Partial', scope:'Scope 3', country:'Indonesia', supplier_name:'' })
   const [file, setFile] = useState(null)
@@ -57,7 +61,7 @@ export default function AuthenticationCentre() {
 
   const loadStandards = async () => {
     if (!standards) {
-      const r = await API.get('/api/auth/standards')
+      const r = await api.get('/api/auth/standards')
       setStandards(r.data)
     }
     setShowStandards(p => !p)
@@ -74,7 +78,7 @@ export default function AuthenticationCentre() {
       fd.append('country', form.country)
       fd.append('scope', form.scope)
       fd.append('supplier_name', form.supplier_name || file.name)
-      const r = await API.post('/api/auth/authenticate', fd, { headers: { 'Content-Type':'multipart/form-data' } })
+      const r = await api.post('/api/auth/authenticate', fd, { headers: { 'Content-Type':'multipart/form-data' }, timeout: 120000 })
       setResult(r.data)
     } catch(e) {
       setError('Authentication failed. Make sure backend is running on port 8001.')
@@ -84,6 +88,55 @@ export default function AuthenticationCentre() {
 
   const ts = result?.trust_score
   const layers = result?.authentication_layers
+  const fallbackCalculation = ts && layers ? [
+    {
+      key:'ipcc_emission_accuracy',
+      label:'IPCC / DEFRA emission accuracy',
+      weight_pct:ts.weights.ipcc_emission_accuracy,
+      raw_score:layers.ipcc_defra.score,
+      weighted_contribution:Number(((layers.ipcc_defra.score * ts.weights.ipcc_emission_accuracy) / 100).toFixed(1)),
+      status:layers.ipcc_defra.status,
+      evidence:layers.ipcc_defra.findings?.[0] || 'Emission values checked against benchmark range',
+      what_was_checked:'Emission values compared with IPCC / DEFRA commodity benchmarks.',
+      business_rationale:'Prevents understated or overstated emissions from weakening assurance quality.',
+    },
+    {
+      key:'eudr_compliance',
+      label:'EUDR Article 3 compliance',
+      weight_pct:ts.weights.eudr_compliance,
+      raw_score:layers.eudr_article3.score,
+      weighted_contribution:Number(((layers.eudr_article3.score * ts.weights.eudr_compliance) / 100).toFixed(1)),
+      status:layers.eudr_article3.status,
+      evidence:layers.eudr_article3.is_eudr_regulated
+        ? `${layers.eudr_article3.requirements_passed} requirements passed, ${layers.eudr_article3.requirements_failed} failed`
+        : layers.eudr_article3.message,
+      what_was_checked:'Required EUDR data fields and declarations checked.',
+      business_rationale:'EUDR evidence is a regulatory gate for deforestation-linked commodities.',
+    },
+    {
+      key:'ghg_protocol',
+      label:'GHG Protocol completeness',
+      weight_pct:ts.weights.ghg_protocol,
+      raw_score:layers.ghg_protocol.score,
+      weighted_contribution:Number(((layers.ghg_protocol.score * ts.weights.ghg_protocol) / 100).toFixed(1)),
+      status:layers.ghg_protocol.status,
+      evidence:`${layers.ghg_protocol.fields_present?.length || 0} required fields present, ${layers.ghg_protocol.fields_missing?.length || 0} missing`,
+      what_was_checked:'Required GHG Protocol fields checked for completeness.',
+      business_rationale:'Complete fields make the data reportable and comparable.',
+    },
+    {
+      key:'certification_validity',
+      label:'Certification validity',
+      weight_pct:ts.weights.certification_validity,
+      raw_score:layers.certification.score,
+      weighted_contribution:Number(((layers.certification.score * ts.weights.certification_validity) / 100).toFixed(1)),
+      status:layers.certification.status,
+      evidence:layers.certification.findings?.[0] || layers.certification.message || 'Certification checked against accepted registries',
+      what_was_checked:'Supplier certification checked for commodity applicability.',
+      business_rationale:'Valid certification increases confidence in supplier claims.',
+    },
+  ] : []
+  const calculationRows = ts?.calculation_breakdown || fallbackCalculation
 
   return (
     <div className="space-y-6">
@@ -274,6 +327,78 @@ export default function AuthenticationCentre() {
                 <div className="text-xs text-slate-400 mt-1">{ts.weights[card.key]}% weight</div>
               </div>
             ))}
+          </div>
+
+          {/* Trust Score Calculation */}
+          <div className="card">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h2 className="font-bold text-slate-800">Trust Score Calculation Evidence</h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  The final score is a weighted sum of standard checks. This table shows exactly how each layer contributed.
+                </p>
+                <div className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                  Formula: {ts.calculation_formula || 'final_score = round(sum(raw_score x weight_pct / 100))'}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs font-semibold text-slate-400 uppercase">Final Weighted Score</div>
+                <div className="text-3xl font-black text-slate-900">{ts.final_score}/100</div>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
+                    <th className="py-3 text-left">Evidence Layer</th>
+                    <th className="py-3 text-right">Weight</th>
+                    <th className="py-3 text-right">Layer Score</th>
+                    <th className="py-3 text-right">Contribution</th>
+                    <th className="py-3 text-left pl-4">What Was Checked</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {calculationRows.map(row => {
+                    const weight = row.weight_pct ?? ts.weights[row.key]
+                    const rawScore = row.raw_score ?? row.score
+                    const contribution = row.weighted_contribution ?? ((rawScore * weight) / 100).toFixed(1)
+                    return (
+                      <tr key={row.key} className="border-b border-slate-100 last:border-0">
+                        <td className="py-3 font-semibold text-slate-800">{row.label}</td>
+                        <td className="py-3 text-right font-bold text-slate-700">{weight}%</td>
+                        <td className="py-3 text-right">
+                          <span className={`font-black ${rawScore >= 80 ? 'text-green-600' : rawScore >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                            {rawScore}/100
+                          </span>
+                        </td>
+                        <td className="py-3 text-right font-black text-slate-900">{contribution}</td>
+                        <td className="py-3 pl-4 text-slate-600">
+                          <div className="font-medium">{evidenceLabel(row.status)}: {row.evidence}</div>
+                          <div className="text-xs text-slate-400 mt-1">{row.what_was_checked}</div>
+                          <div className="text-xs text-slate-500 mt-1">{row.business_rationale}</div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {ts.improvement_priorities?.length > 0 && (
+              <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <div className="font-bold text-amber-800 text-sm mb-2">Top score improvement priorities</div>
+                <div className="grid md:grid-cols-3 gap-3">
+                  {ts.improvement_priorities.map((item, idx) => (
+                    <div key={idx} className="rounded-lg bg-white p-3 border border-amber-100">
+                      <div className="text-xs font-black text-amber-600 uppercase">Priority {idx + 1}</div>
+                      <div className="font-semibold text-slate-800 text-sm mt-1">{item.layer}</div>
+                      <div className="text-xs text-slate-500 mt-1">Current score: {item.current_score}/100</div>
+                      <div className="text-xs text-red-600 font-semibold mt-1">Weighted points lost: {item.lost_points}</div>
+                      <div className="text-xs text-slate-600 mt-2">{item.action}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* AI Audit Summary */}

@@ -505,12 +505,71 @@ def calculate_authenticated_trust_score(
         "certification_validity": cert_result.get("score", 50),
     }
 
-    weighted_score = sum(
-        scores[k] * weights[k] / 100
-        for k in weights
-    )
+    evidence_map = {
+        "ipcc_emission_accuracy": {
+            "label": "IPCC / DEFRA emission factor accuracy",
+            "status": ipcc_result.get("status"),
+            "what_was_checked": "Submitted emission values were compared with commodity-specific IPCC AR6 / DEFRA benchmark ranges.",
+            "evidence": "; ".join(ipcc_result.get("findings", [])) or ipcc_result.get("message", "Emission factor benchmark check completed."),
+            "business_rationale": "Prevents understated or overstated emissions from weakening assurance quality.",
+        },
+        "eudr_compliance": {
+            "label": "EUDR Article 3 compliance",
+            "status": eudr_result.get("status"),
+            "what_was_checked": "Required EUDR fields such as geolocation, country, production period, due diligence reference, and deforestation-free declaration were checked.",
+            "evidence": (
+                f"{eudr_result.get('requirements_passed', 0)} requirements passed; "
+                f"{eudr_result.get('requirements_failed', 0)} requirements failed."
+                if eudr_result.get("status") != "not_applicable"
+                else eudr_result.get("message", "EUDR not applicable for this commodity.")
+            ),
+            "business_rationale": "EUDR evidence is a regulatory gate for deforestation-linked commodities.",
+        },
+        "ghg_protocol": {
+            "label": "GHG Protocol completeness",
+            "status": ghg_result.get("status"),
+            "what_was_checked": "Required GHG Protocol fields for the selected scope were checked for completeness.",
+            "evidence": (
+                f"{len(ghg_result.get('fields_present', []))} fields present; "
+                f"{len(ghg_result.get('fields_missing', []))} fields missing."
+            ),
+            "business_rationale": "Complete scope, unit, period, country, source, and method fields make the data reportable and comparable.",
+        },
+        "certification_validity": {
+            "label": "Certification validity",
+            "status": cert_result.get("status"),
+            "what_was_checked": "Supplier certification was checked for commodity applicability and accepted registry standard.",
+            "evidence": "; ".join(cert_result.get("findings", [])) or cert_result.get("message", "Certification registry check completed."),
+            "business_rationale": "Valid certification increases confidence in supplier claims and chain-of-custody evidence.",
+        },
+    }
+
+    calculation_breakdown = []
+    for key, weight in weights.items():
+        raw_score = scores[key]
+        contribution = round(raw_score * weight / 100, 1)
+        calculation_breakdown.append({
+            "key": key,
+            "label": evidence_map[key]["label"],
+            "weight_pct": weight,
+            "raw_score": raw_score,
+            "weighted_contribution": contribution,
+            "max_contribution": weight,
+            "formula": f"{raw_score} x {weight}% = {contribution}",
+            "status": evidence_map[key]["status"],
+            "what_was_checked": evidence_map[key]["what_was_checked"],
+            "evidence": evidence_map[key]["evidence"],
+            "business_rationale": evidence_map[key]["business_rationale"],
+        })
+
+    weighted_score = sum(item["weighted_contribution"] for item in calculation_breakdown)
 
     final_score = round(weighted_score)
+    score_band = (
+        "trusted" if final_score >= 80 else
+        "conditional" if final_score >= 60 else
+        "not_trusted"
+    )
 
     verdict = (
         "✅ Authenticated & Trustworthy" if final_score >= 80 else
@@ -523,6 +582,23 @@ def calculate_authenticated_trust_score(
         "verdict": verdict,
         "component_scores": scores,
         "weights": weights,
+        "score_band": score_band,
+        "calculation_formula": "final_score = round(sum(raw_score * weight_pct / 100))",
+        "calculation_breakdown": calculation_breakdown,
+        "improvement_priorities": [
+            {
+                "layer": item["label"],
+                "current_score": item["raw_score"],
+                "lost_points": round(item["max_contribution"] - item["weighted_contribution"], 1),
+                "action": item["evidence"],
+            }
+            for item in sorted(
+                calculation_breakdown,
+                key=lambda i: i["max_contribution"] - i["weighted_contribution"],
+                reverse=True,
+            )
+            if item["raw_score"] < 85
+        ][:3],
         "authentication_standard": "EnvirozoneAI Multi-Standard Authentication Framework v1.0",
         "standards_used": [
             "IPCC Sixth Assessment Report (AR6) 2024",
